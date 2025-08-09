@@ -66,6 +66,7 @@ typedef struct {
 
 void chip8_initialize(Chip8* chip8);
 void chip8_loadGame(Chip8* chip8, const char* filename);
+void chip8_drawGraphics(Chip8* chip8);
 
 int main() {
   Chip8 chip8;
@@ -126,4 +127,20 @@ void chip8_loadGame(Chip8* chip8, const char* filename) {
   fread(chip8->memory + 0x200, sizeof(chip8->memory[0]),
     ARRAY_SIZE(chip8->memory) - 0x200, file);
   fclose(file);
+}
+
+void chip8_drawGraphics(Chip8* chip8) {
+  for (int y = 0; y < HEIGHT; y++) {
+    for (int x = 0; x < WIDTH; x++) {
+      unsigned char pixel = chip8->gfx[x + (y * WIDTH)];
+      // Render the pixel (this is just a placeholder)
+      if (pixel) {
+        printf("█");
+      }
+      else {
+        printf(" ");
+      }
+    }
+    printf("\n");
+  }
 }
