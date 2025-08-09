@@ -65,11 +65,13 @@ typedef struct {
 } Chip8;
 
 void chip8_initialize(Chip8* chip8);
+void chip8_loadGame(Chip8* chip8, const char* filename);
 
 int main() {
   Chip8 chip8;
 
   chip8_initialize(&chip8);
+  chip8_loadGame(&chip8, "games/br8kout.ch8");
 
   return 0;
 }
@@ -110,4 +112,18 @@ void chip8_initialize(Chip8* chip8) {
   // TODO: to understand how timers work in Chip-8
   chip8->delay_timer = 0;
   chip8->sound_timer = 0;
+}
+
+void chip8_loadGame(Chip8* chip8, const char* filename) {
+  // Load a Chip-8 game into memory
+  FILE* file = fopen(filename, "rb");
+  if (!file) {
+    fprintf(stderr, "Could not open game file: %s\n", filename);
+    return;
+  }
+
+  // Read the game into memory starting at 0x200
+  fread(chip8->memory + 0x200, sizeof(chip8->memory[0]),
+    ARRAY_SIZE(chip8->memory) - 0x200, file);
+  fclose(file);
 }
