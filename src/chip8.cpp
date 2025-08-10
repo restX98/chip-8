@@ -126,29 +126,39 @@ void Chip8::emulateCycle() {
       break;
 
     case 0x2000: // 2NNN - Calls subroutine at NNN
-      stack[sp] = pc; // Push current PC onto stack
-      sp++; // Increment stack pointer
-      pc = opcode & 0x0FFF; // Set PC to NNN
+      stack[sp] = pc;
+      sp++;
+      pc = opcode & 0x0FFF;
       d_printf("%X: Call subroutine at 0x%03X\n", opcode, opcode & 0x0FFF);
       break;
 
     case 0x3000: // 3XNN - Skips the next instruction if VX equals NN (usually the next instruction is a jump to skip a code block).
       if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) {
-        pc += 4; // Skip the next instruction
+        pc += 4;
         d_printf("%X: Skip next instruction, V%X == %02X\n", opcode, (opcode & 0x0F00) >> 8, opcode & 0x00FF);
       } else {
-        pc += 2; // Move to the next instruction
+        pc += 2;
         d_printf("%X: Do not skip next instruction, V%X != %02X\n", opcode, (opcode & 0x0F00) >> 8, opcode & 0x00FF);
       }
       break;
 
     case 0x4000: // 4XNN - Skips the next instruction if VX does not equal NN (usually the next instruction is a jump to skip a code block).
       if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
-        pc += 4; // Skip the next instruction
+        pc += 4;
         d_printf("%X: Skip next instruction, V%X != %02X\n", opcode, (opcode & 0x0F00) >> 8, opcode & 0x00FF);
       } else {
-        pc += 2; // Move to the next instruction
+        pc += 2;
         d_printf("%X: Do not skip next instruction, V%X == %02X\n", opcode, (opcode & 0x0F00) >> 8, opcode & 0x00FF);
+      }
+      break;
+    
+    case 0x5000: // 5XY0 - Skips the next instruction if VX equals VY (usually the next instruction is a jump to skip a code block).
+      if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4]) {
+        pc += 4;
+        d_printf("%X: Skip next instruction, V%X == V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
+      } else {
+        pc += 2;
+        d_printf("%X: Do not skip next instruction, V%X != V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
       }
       break;
 
@@ -178,6 +188,12 @@ void Chip8::emulateCycle() {
           d_printf("%X: Set V%X to V%X AND V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
           break;
 
+        case 0x0003: // 8XY3 - Sets VX to VX xor VY.
+          V[(opcode & 0x0F00) >> 8] ^= V[(opcode & 0x00F0) >> 4];
+          pc += 2;
+          d_printf("%X: Set V%X to V%X XOR V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
+          break;
+
         case 0x0004: { // 8XY4 - Adds VY to VX. VF is set to 1 when there's an overflow, and to 0 when there is not.
           unsigned char vx = V[(opcode & 0x0F00) >> 8];
           unsigned char vy = V[(opcode & 0x00F0) >> 4];
@@ -198,12 +214,39 @@ void Chip8::emulateCycle() {
           break;
         }
 
+        case 0x0006: // 8XY6 - Shifts VX to the right by 1, then stores the least significant bit of VX prior to the shift into VF.
+          V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1; // Store LSB in VF
+          V[(opcode & 0x0F00) >> 8] >>= 1;
+          pc += 2;
+          d_printf("%X: Shift V%X right by one, VF set to %d\n", opcode, (opcode & 0x0F00) >> 8, V[0xF]);
+          break;
+
+        case 0x0007: { // 8XY7 - Sets VX to VY minus VX. VF is set to 0 when there's an underflow, and 1 when there is not. (i.e. VF set to 1 if VY >= VX).
+          unsigned char vx = V[(opcode & 0x0F00) >> 8];
+          unsigned char vy = V[(opcode & 0x00F0) >> 4];
+          V[0xF] = (vy > vx) ? 1 : 0; // Set carry flag
+          V[(opcode & 0x0F00) >> 8] = vy - vx;
+          pc += 2;
+          d_printf("%X: Set V%X to V%X - V%X, VF set to %d\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4, (opcode & 0x0F00) >> 8, V[0xF]);
+          break;
+        }
+
         default:
           d_printf("Unknown opcode: 0x%04X\n", opcode);
           exit(1);
       }
       break;
 
+    case 0x9000: // 9XY0 - Skips the next instruction if VX does not equal VY. (Usually the next instruction is a jump to skip a code block).
+      if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]) {
+        pc += 4;
+        d_printf("%X: Skip next instruction, V%X != V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
+      } else {
+        pc += 2;
+        d_printf("%X: Do not skip next instruction, V%X == V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
+      }
+      break;
+    
     case 0xA000: // ANNN: Sets I to the address NNN
       I = opcode & 0x0FFF;
       pc += 2;
@@ -278,6 +321,23 @@ void Chip8::emulateCycle() {
           pc += 2;
           d_printf("%X: Set V%X to delay timer value %d\n", opcode, (opcode & 0x0F00) >> 8, delay_timer);
           break;
+
+        case 0x000A: { // FX0A - A key press is awaited, and then stored in VX (blocking operation, all instruction halted until next key event, delay and sound timers should continue processing).
+          bool keyPressed = false;
+          for (int i = 0; i < 16; i++) {
+            if (key[i]) {
+              V[(opcode & 0x0F00) >> 8] = i;
+              keyPressed = true;
+              break;
+            }
+          }
+          if (!keyPressed) {
+            return; // Wait for a key press
+          }
+          pc += 2;
+          d_printf("%X: Wait for key press, set V%X to %d\n", opcode, (opcode & 0x0F00) >> 8, V[(opcode & 0x0F00) >> 8]);
+          break;
+        }
 
         case 0x0015: // FX15 - Sets the delay timer to VX.
           delay_timer = V[(opcode & 0x0F00) >> 8];
