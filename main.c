@@ -2,6 +2,8 @@
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+#define DEBUG 1
+
 #define WIDTH 64
 #define HEIGHT 32
 
@@ -62,7 +64,19 @@ typedef struct {
 
   // Chip 8 has a HEX based keypad (0x0-0xF)
   unsigned char key[16];
+
+  // Draw flag to indicate if the screen needs to be updated
+  unsigned char drawFlag;
 } Chip8;
+
+void d_printf(const char* format, ...) {
+  if (DEBUG) {
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+  }
+}
 
 void chip8_initialize(Chip8* chip8);
 void chip8_loadGame(Chip8* chip8, const char* filename);
@@ -130,17 +144,18 @@ void chip8_loadGame(Chip8* chip8, const char* filename) {
 }
 
 void chip8_drawGraphics(Chip8* chip8) {
+  // system("clear"); // Clear the console (for Linux/Unix)
   for (int y = 0; y < HEIGHT; y++) {
     for (int x = 0; x < WIDTH; x++) {
       unsigned char pixel = chip8->gfx[x + (y * WIDTH)];
       // Render the pixel (this is just a placeholder)
       if (pixel) {
         printf("█");
-      }
-      else {
+      } else {
         printf(" ");
       }
     }
     printf("\n");
   }
+  chip8->drawFlag = 0;
 }
