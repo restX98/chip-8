@@ -296,6 +296,62 @@ void chip8_emulateCycle(Chip8* chip8) {
       d_printf("%X: Draw sprite at (%d, %d) with height %d\n", opcode, x, y, height);
       break;
     }
+
+    case 0xF000:
+      switch (opcode & 0x00FF) {
+        case 0x0007: // FX07 - Sets VX to the value of the delay timer.
+          chip8->V[(opcode & 0x0F00) >> 8] = chip8->delay_timer;
+          chip8->pc += 2;
+          d_printf("%X: Set V%X to delay timer value %d\n", opcode, (opcode & 0x0F00) >> 8, chip8->delay_timer);
+          break;
+
+        case 0x0015: // FX15 - Sets the delay timer to VX.
+          chip8->delay_timer = chip8->V[(opcode & 0x0F00) >> 8];
+          chip8->pc += 2;
+          d_printf("%X: Set delay timer to V%X\n", opcode, (opcode & 0x0F00) >> 8);
+          break;
+
+        case 0x0018: // FX18 - Sets the sound timer to VX.
+          chip8->sound_timer = chip8->V[(opcode & 0x0F00) >> 8];
+          chip8->pc += 2;
+          d_printf("%X: Set sound timer to V%X\n", opcode, (opcode & 0x0F00) >> 8);
+          break;
+
+        case 0x0029: // FX29 - Sets I to the location of the sprite for the character in VX(only consider the lowest nibble). Characters 0-F (in hexadecimal) are represented by a 4x5 font.
+          chip8->I = chip8->V[(opcode & 0x0F00) >> 8] * 0x5;
+          chip8->pc += 2;
+          d_printf("%X: Set I to sprite location for V%X\n", opcode, (opcode & 0x0F00) >> 8);
+          break;
+
+        case 0x0033: // FX33 - Stores the binary-coded decimal representation of VX, with the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
+          unsigned short bcd = chip8->V[(opcode & 0x0F00) >> 8];
+          chip8->memory[chip8->I] = bcd / 100;
+          chip8->memory[chip8->I + 1] = (bcd / 10) % 10;
+          chip8->memory[chip8->I + 2] = bcd % 10;
+          chip8->pc += 2;
+          d_printf("%X: Store binary-coded decimal representation of V%X at I: %d, %d, %d\n",
+            opcode,
+            (opcode & 0x0F00) >> 8,
+            chip8->memory[chip8->I],
+            chip8->memory[chip8->I + 1],
+            chip8->memory[chip8->I + 2]
+          );
+          break;
+
+        case 0x0065: // FX65 - Fills from V0 to VX (including VX) with values from memory, starting at address I. The offset from I is increased by 1 for each value read, but I itself is left unmodified.
+          for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
+            chip8->V[i] = chip8->memory[chip8->I + i];
+          }
+          chip8->pc += 2;
+          d_printf("%X: Fill V0 to V%X with values from memory starting at I\n", opcode, (opcode & 0x0F00) >> 8);
+          break;
+
+        default:
+          d_printf("Unknown opcode: 0x%04X\n", opcode);
+          exit(1);
+      }
+      break;
+
     default:
       d_printf("Unknown opcode: 0x%04X\n", opcode);
       exit(1);
