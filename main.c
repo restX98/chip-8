@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -80,14 +83,23 @@ void d_printf(const char* format, ...) {
 
 void chip8_initialize(Chip8* chip8);
 void chip8_loadGame(Chip8* chip8, const char* filename);
+void chip8_emulateCycle(Chip8* chip8);
 void chip8_drawGraphics(Chip8* chip8);
 
 int main() {
   Chip8 chip8;
 
   chip8_initialize(&chip8);
-  chip8_loadGame(&chip8, "games/br8kout.ch8");
+  chip8_loadGame(&chip8, "games/pong2.c8");
 
+  while (1) {
+    chip8_emulateCycle(&chip8);
+
+    // If the draw flag is set, update the screen
+    if (chip8.drawFlag)
+      chip8_drawGraphics(&chip8); // Implement graphics drawing
+
+  }
   return 0;
 }
 
@@ -127,6 +139,10 @@ void chip8_initialize(Chip8* chip8) {
   // TODO: to understand how timers work in Chip-8
   chip8->delay_timer = 0;
   chip8->sound_timer = 0;
+
+  chip8->drawFlag = 0; // Initialize draw flag
+
+  srand(time(NULL)); // Seed the random number generator
 }
 
 void chip8_loadGame(Chip8* chip8, const char* filename) {
@@ -141,6 +157,28 @@ void chip8_loadGame(Chip8* chip8, const char* filename) {
   fread(chip8->memory + 0x200, sizeof(chip8->memory[0]),
     ARRAY_SIZE(chip8->memory) - 0x200, file);
   fclose(file);
+}
+
+void chip8_emulateCycle(Chip8* chip8) {
+  unsigned short opcode =
+    chip8->memory[chip8->pc] << 8 | chip8->memory[chip8->pc + 1];
+
+  switch (opcode & 0xF000) {
+
+    default:
+      d_printf("Unknown opcode: 0x%04X\n", opcode);
+      exit(1);
+  }
+
+  // Update timers
+  if (chip8->delay_timer > 0)
+    --chip8->delay_timer;
+
+  if (chip8->sound_timer > 0) {
+    if (chip8->sound_timer == 1)
+      printf("BEEP!\n");
+    --chip8->sound_timer;
+  }
 }
 
 void chip8_drawGraphics(Chip8* chip8) {
