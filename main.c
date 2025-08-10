@@ -297,6 +297,25 @@ void chip8_emulateCycle(Chip8* chip8) {
       break;
     }
 
+    case 0xE000:
+      switch (opcode & 0x00FF) {
+
+        case 0x00A1: // EXA1 - Skips the next instruction if the key stored in VX(only consider the lowest nibble) is not pressed (usually the next instruction is a jump to skip a code block).
+          if (!chip8->key[chip8->V[(opcode & 0x0F00) >> 8]]) {
+            chip8->pc += 4; // Skip next instruction
+            d_printf("%X: Skip next instruction, key V%X is not pressed\n", opcode, (opcode & 0x0F00) >> 8);
+          } else {
+            chip8->pc += 2; // Move to next instruction
+            d_printf("%X: Do not skip next instruction, key V%X is pressed\n", opcode, (opcode & 0x0F00) >> 8);
+          }
+          break;
+
+        default:
+          d_printf("Unknown opcode: 0x%04X\n", opcode);
+          exit(1);
+      }
+      break;
+
     case 0xF000:
       switch (opcode & 0x00FF) {
         case 0x0007: // FX07 - Sets VX to the value of the delay timer.
