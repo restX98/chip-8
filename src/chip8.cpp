@@ -182,6 +182,12 @@ void Chip8::emulateCycle() {
           d_printf("%X: Set V%X to V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
           break;
 
+        case 0x0001: // 8XY1 - Sets VX to VX or VY. (bitwise OR operation).
+          V[(opcode & 0x0F00) >> 8] |= V[(opcode & 0x00F0) >> 4];
+          pc += 2;
+          d_printf("%X: Set V%X to V%X OR V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
+          break;
+
         case 0x0002: // 8XY2 - Sets VX to VX and VY. (bitwise AND operation).
           V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
           pc += 2;
@@ -230,6 +236,13 @@ void Chip8::emulateCycle() {
           d_printf("%X: Set V%X to V%X - V%X, VF set to %d\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4, (opcode & 0x0F00) >> 8, V[0xF]);
           break;
         }
+
+        case 0x000E: // 8XYE - Shifts VX to the left by 1, then sets VF to 1 if the most significant bit of VX prior to that shift was set, or to 0 if it was unset.
+          V[0xF] = (V[(opcode & 0x0F00) >> 8] & 0x80) >> 7; // Store MSB in VF
+          V[(opcode & 0x0F00) >> 8] <<= 1;
+          pc += 2;
+          d_printf("%X: Shift V%X left by one, VF set to %d\n", opcode, (opcode & 0x0F00) >> 8, V[0xF]);
+          break;
 
         default:
           d_printf("Unknown opcode: 0x%04X\n", opcode);
