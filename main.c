@@ -164,6 +164,25 @@ void chip8_emulateCycle(Chip8* chip8) {
     chip8->memory[chip8->pc] << 8 | chip8->memory[chip8->pc + 1];
 
   switch (opcode & 0xF000) {
+    case 0x0000:
+      if (opcode == 0x00E0) { // 00E0 - Clears the screen
+        for (int i = 0; i < ARRAY_SIZE(chip8->gfx); i++) {
+          chip8->gfx[i] = 0;
+        }
+        chip8->drawFlag = 1;
+        chip8->pc += 2;
+        d_printf("%04X: Clear the screen\n", opcode);
+      } else if (opcode == 0x00EE) { // 00EE - Returns from a subroutine
+        chip8->sp--;
+        chip8->pc = chip8->stack[chip8->sp];
+        chip8->pc += 2;
+        d_printf("%04X: Return from subroutine\n", opcode);
+      } else {
+        d_printf("Unknown opcode: 0x%X\n", opcode);
+        exit(1);
+      }
+      break;
+
 
     default:
       d_printf("Unknown opcode: 0x%04X\n", opcode);
