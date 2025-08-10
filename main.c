@@ -215,6 +215,18 @@ void chip8_emulateCycle(Chip8* chip8) {
       }
       break;
 
+    case 0x6000: // 6XNN - Sets VX to NN
+      chip8->V[(opcode & 0x0F00) >> 8] = opcode & 0x00FF;
+      chip8->pc += 2;
+      d_printf("%X: Set V%X to %d\n", opcode, (opcode & 0x0F00) >> 8, opcode & 0x00FF);
+      break;
+
+    case 0x7000: // 7XNN - Adds NN to VX (carry flag is not changed).
+      chip8->V[(opcode & 0x0F00) >> 8] += opcode & 0x00FF;
+      chip8->pc += 2;
+      d_printf("%X: Add %02X to V%X\n", opcode, opcode & 0x00FF, (opcode & 0x0F00) >> 8);
+      break;
+
     default:
       d_printf("Unknown opcode: 0x%04X\n", opcode);
       exit(1);
