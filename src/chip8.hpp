@@ -22,7 +22,7 @@ public:
   // unsigned char getDelayTimer();
   // unsigned char getSoundTimer();
 
-  bool getDrawFlag() const;
+  bool getDrawFlag();
 
 private:
   static constexpr unsigned char fontset[80] = {

@@ -437,6 +437,8 @@ void Chip8::d_printf(const char* format, ...) {
   }
 }
 
-bool Chip8::getDrawFlag() const {
-  return drawFlag;
+bool Chip8::getDrawFlag() {
+  bool wasDrawn = drawFlag;
+  drawFlag = false;
+  return wasDrawn;
 }
