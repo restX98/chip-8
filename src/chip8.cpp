@@ -245,15 +245,15 @@ void Chip8::emulateCycle() {
 
     case 0xE000:
       switch (opcode & 0x00FF) {
-        // case 0x009E: // EX9E - Skips the next instruction if the key stored in VX is pressed.
-        //   if (key[V[(opcode & 0x0F00) >> 8]]) {
-        //     pc += 4; // Skip next instruction
-        //     d_printf("%X: Skip next instruction, key V%X is pressed\n", opcode, (opcode & 0x0F00) >> 8);
-        //   } else {
-        //     pc += 2; // Move to next instruction
-        //     d_printf("%X: Do not skip next instruction, key V%X is not pressed\n", opcode, (opcode & 0x0F00) >> 8);
-        //   }
-        //   break;
+        case 0x009E: // EX9E - Skips the next instruction if the key stored in VX is pressed.
+          if (key[V[(opcode & 0x0F00) >> 8]]) {
+            pc += 4;
+            d_printf("%X: Skip next instruction, key V%X is pressed\n", opcode, (opcode & 0x0F00) >> 8);
+          } else {
+            pc += 2; // Move to next instruction
+            d_printf("%X: Do not skip next instruction, key V%X is not pressed\n", opcode, (opcode & 0x0F00) >> 8);
+          }
+          break;
 
         case 0x00A1: // EXA1 - Skips the next instruction if the key stored in VX(only consider the lowest nibble) is not pressed (usually the next instruction is a jump to skip a code block).
           if (!key[V[(opcode & 0x0F00) >> 8]]) {
@@ -291,6 +291,12 @@ void Chip8::emulateCycle() {
           d_printf("%X: Set sound timer to V%X\n", opcode, (opcode & 0x0F00) >> 8);
           break;
 
+        case 0x001E: // FX1E - Adds VX to I. VF is not affected.
+          I += V[(opcode & 0x0F00) >> 8];
+          pc += 2;
+          d_printf("%X: Add V%X to I, new I = %d\n", opcode, (opcode & 0x0F00) >> 8, I);
+          break;
+
         case 0x0029: // FX29 - Sets I to the location of the sprite for the character in VX(only consider the lowest nibble). Characters 0-F (in hexadecimal) are represented by a 4x5 font.
           I = V[(opcode & 0x0F00) >> 8] * 0x5;
           pc += 2;
@@ -312,6 +318,15 @@ void Chip8::emulateCycle() {
           );
           break;
         }
+
+        case 0x0055: // FX55 - Stores from V0 to VX (including VX) in memory, starting at address I. The offset from I is increased by 1 for each value written, but I itself is left unmodified.
+          for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
+            memory[I + i] = V[i];
+          }
+          pc += 2;
+          d_printf("%X: Store V0 to V%X in memory starting at I\n", opcode, (opcode & 0x0F00) >> 8);
+          break;
+
         case 0x0065: // FX65 - Fills from V0 to VX (including VX) with values from memory, starting at address I. The offset from I is increased by 1 for each value read, but I itself is left unmodified.
           for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
             V[i] = memory[I + i];
