@@ -227,6 +227,36 @@ void chip8_emulateCycle(Chip8* chip8) {
       d_printf("%X: Add %02X to V%X\n", opcode, opcode & 0x00FF, (opcode & 0x0F00) >> 8);
       break;
 
+    case 0x8000:
+      switch (opcode & 0x000F) {
+        case 0x0000: // 8XY0 - Sets VX to the value of VY.
+          chip8->V[(opcode & 0x0F00) >> 8] = chip8->V[(opcode & 0x00F0) >> 4];
+          chip8->pc += 2;
+          d_printf("%X: Set V%X to V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
+          break;
+
+        case 0x0002: // 8XY2 - Sets VX to VX and VY. (bitwise AND operation).
+          chip8->V[(opcode & 0x0F00) >> 8] &= chip8->V[(opcode & 0x00F0) >> 4];
+          chip8->pc += 2;
+          d_printf("%X: Set V%X to V%X AND V%X\n", opcode, (opcode & 0x0F00) >> 8, (opcode & 0x0F00) >> 8, (opcode & 0x00F0) >> 4);
+          break;
+
+        case 0x0004: { // 8XY4 - Adds VY to VX. VF is set to 1 when there's an overflow, and to 0 when there is not.
+          unsigned char vx = chip8->V[(opcode & 0x0F00) >> 8];
+          unsigned char vy = chip8->V[(opcode & 0x00F0) >> 4];
+          chip8->V[(opcode & 0x0F00) >> 8] += vy;
+          chip8->V[0xF] = (vx + vy > 255) ? 1 : 0; // Set carry flag
+          chip8->pc += 2;
+          d_printf("%X: Add V%X to V%X, VF set to %d\n", opcode, (opcode & 0x00F0) >> 4, (opcode & 0x0F00) >> 8, chip8->V[0xF]);
+          break;
+        }
+
+        default:
+          d_printf("Unknown opcode: 0x%04X\n", opcode);
+          exit(1);
+      }
+      break;
+
     default:
       d_printf("Unknown opcode: 0x%04X\n", opcode);
       exit(1);
