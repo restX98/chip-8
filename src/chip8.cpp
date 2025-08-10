@@ -264,6 +264,20 @@ void Chip8::emulateCycle() {
     case 0xD000: { // DXYN - Draws a sprite at coordinate (VX, VY) with N bytes of sprite data starting at the address stored in I.
       unsigned char x = V[(opcode & 0x0F00) >> 8];
       unsigned char y = V[(opcode & 0x00F0) >> 4];
+
+      if (x < 0) {
+        x = (-x) % WIDTH;
+        x =  WIDTH - x;
+      } else if (x >= WIDTH) {
+        x = x % WIDTH;
+      }
+      if (y < 0) {
+        y = (-y) % HEIGHT;
+        y = HEIGHT - y;
+      } else if (y >= HEIGHT) {
+        y = y % HEIGHT;
+      }
+
       unsigned char height = opcode & 0x000F;
 
       for (int i = 0; i < height; i++) {
