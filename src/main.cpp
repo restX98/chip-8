@@ -2,6 +2,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+#include "chip8.hpp"
+
 #define APP_NAME "Chip-8 Emulator"
 #define APP_VERSION "1.0"
 #define APP_IDENTIFIER "com.emulators.chip8"
@@ -15,6 +17,8 @@
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window* window = nullptr;
 static SDL_Renderer* renderer = nullptr;
+
+static Chip8* chip8 = nullptr;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
@@ -31,6 +35,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
     }
     SDL_SetWindowResizable(window, WINDOW_RESIZABLE);
 
+    chip8 = new Chip8("../games/pong2.c8");
+
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
@@ -44,6 +50,9 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void* appstate) {
+
+    chip8->emulateCycle();
+
     SDL_FRect rect;
 
     /* as you can see from this, rendering draws over whatever was drawn before it. */
