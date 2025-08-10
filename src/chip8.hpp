@@ -3,6 +3,8 @@
 
 #define DEBUG 1
 
+#include <array>
+
 class Chip8 {
 public:
   Chip8(const char* filename);
@@ -10,14 +12,19 @@ public:
 
   void loadGame(const char* filename);
   void emulateCycle();
-  // void setKeys(unsigned char keys[16]);
-  // unsigned char* getGraphics();
+  void pressKeys(unsigned char key);
+  void releaseKeys(unsigned char key);
+
+  static constexpr unsigned char WIDTH = 64;
+  static constexpr unsigned char HEIGHT = 32;
+
+  std::array<std::array<bool, WIDTH>, HEIGHT> getGraphics() const;
   // unsigned char getDelayTimer();
   // unsigned char getSoundTimer();
 
+  bool getDrawFlag() const;
+
 private:
-  static constexpr unsigned char WIDTH = 64;
-  static constexpr unsigned char HEIGHT = 32;
   static constexpr unsigned char fontset[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -60,7 +67,7 @@ private:
 
   // Chip 8 are black and white and the screen has a total of 2048 pixels (64 x
   // 32)
-  unsigned char gfx[WIDTH * HEIGHT];
+  bool gfx[WIDTH * HEIGHT];
 
   // Interupts and hardware registers.
   // The Chip 8 has none, but there are two timer registers that count at 60 Hz.
@@ -75,7 +82,7 @@ private:
   // Chip 8 has a HEX based keypad (0x0-0xF)
   unsigned char key[16];
 
-  unsigned char drawFlag;
+  bool drawFlag;
 
   void d_printf(const char* format, ...);
 };

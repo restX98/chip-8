@@ -15,7 +15,7 @@ Chip8::Chip8(const char* filename) {
 
   // Clear display
   for (int i = 0; i < ARRAY_SIZE(gfx); i++) {
-    gfx[i] = 0;
+    gfx[i] = false;
   }
 
   // Clear stack
@@ -43,11 +43,23 @@ Chip8::Chip8(const char* filename) {
   delay_timer = 0;
   sound_timer = 0;
 
-  drawFlag = 0; // Initialize draw flag
+  drawFlag = false; // Initialize draw flag
 
   srand(time(NULL)); // Seed the random number generator
 
   loadGame(filename);
+}
+
+void Chip8::pressKeys(unsigned char key) {
+  if (key < 16) {
+    this->key[key] = true;
+  }
+}
+
+void Chip8::releaseKeys(unsigned char key) {
+  if (key < 16) {
+    this->key[key] = false;
+  }
 }
 
 void Chip8::loadGame(const char* filename) {
@@ -92,9 +104,9 @@ void Chip8::emulateCycle() {
     case 0x0000:
       if (opcode == 0x00E0) { // 00E0 - Clears the screen
         for (int i = 0; i < ARRAY_SIZE(gfx); i++) {
-          gfx[i] = 0;
+          gfx[i] = false;
         }
-        drawFlag = 1;
+        drawFlag = true;
         pc += 2;
         d_printf("%04X: Clear the screen\n", opcode);
       } else if (opcode == 0x00EE) { // 00EE - Returns from a subroutine
@@ -216,16 +228,15 @@ void Chip8::emulateCycle() {
         for (int j = 0; j < 8; j++) {
           unsigned char pixel = sprite_byte & (0x80 >> j);
           if (pixel) {
-            if (gfx[(x + j) + ((y + i) * WIDTH)] == 1) {
+            if (gfx[(x + j) + ((y + i) * WIDTH)]) {
               V[0xF] = 1; // Set collision flag
             }
-            gfx[(x + j) + ((y + i) * WIDTH)] ^= 1;
+            gfx[(x + j) + ((y + i) * WIDTH)] ^= true;
           }
         }
       }
 
-      gfx[x + (y * WIDTH)] = 1;
-      drawFlag = 1;
+      drawFlag = true;
       pc += 2;
 
       d_printf("%X: Draw sprite at (%d, %d) with height %d\n", opcode, x, y, height);
@@ -331,6 +342,16 @@ void Chip8::emulateCycle() {
   }
 }
 
+std::array<std::array<bool, Chip8::WIDTH>, Chip8::HEIGHT> Chip8::getGraphics() const {
+  std::array<std::array<bool, WIDTH>, HEIGHT> graphics = {};
+  for (size_t y = 0; y < HEIGHT; ++y) {
+    for (size_t x = 0; x < WIDTH; ++x) {
+      graphics[y][x] = gfx[x + (y * WIDTH)];
+    }
+  }
+  return graphics;
+}
+
 void Chip8::d_printf(const char* format, ...) {
   // TODO: port to c++ style
   if (DEBUG) {
@@ -339,4 +360,8 @@ void Chip8::d_printf(const char* format, ...) {
     vprintf(format, args);
     va_end(args);
   }
+}
+
+bool Chip8::getDrawFlag() const {
+  return drawFlag;
 }
