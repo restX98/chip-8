@@ -257,6 +257,45 @@ void chip8_emulateCycle(Chip8* chip8) {
       }
       break;
 
+    case 0xA000: // ANNN: Sets I to the address NNN
+      chip8->I = opcode & 0x0FFF;
+      chip8->pc += 2;
+      d_printf("%X: Set I to 0x%03X\n", opcode, opcode & 0x0FFF);
+      break;
+
+    case 0xC000: { // CXNN - Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+      unsigned char rand_num = rand() % 256; // Generate a random number
+      chip8->V[(opcode & 0x0F00) >> 8] = rand_num & (opcode & 0x00FF);
+      chip8->pc += 2;
+      d_printf("%X: Set V%X to %d(random) AND %02X\n", opcode, (opcode & 0x0F00) >> 8, rand_num, opcode & 0x00FF);
+      break;
+    }
+
+    case 0xD000: { // DXYN - Draws a sprite at coordinate (VX, VY) with N bytes of sprite data starting at the address stored in I.
+      unsigned char x = chip8->V[(opcode & 0x0F00) >> 8];
+      unsigned char y = chip8->V[(opcode & 0x00F0) >> 4];
+      unsigned char height = opcode & 0x000F;
+
+      for (int i = 0; i < height; i++) {
+        unsigned char sprite_byte = chip8->memory[chip8->I + i];
+        for (int j = 0; j < 8; j++) {
+          unsigned char pixel = sprite_byte & (0x80 >> j);
+          if (pixel) {
+            if (chip8->gfx[(x + j) + ((y + i) * WIDTH)] == 1) {
+              chip8->V[0xF] = 1; // Set collision flag
+            }
+            chip8->gfx[(x + j) + ((y + i) * WIDTH)] ^= 1;
+          }
+        }
+      }
+
+      chip8->gfx[x + (y * WIDTH)] = 1;
+      chip8->drawFlag = 1;
+      chip8->pc += 2;
+
+      d_printf("%X: Draw sprite at (%d, %d) with height %d\n", opcode, x, y, height);
+      break;
+    }
     default:
       d_printf("Unknown opcode: 0x%04X\n", opcode);
       exit(1);
