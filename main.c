@@ -183,6 +183,37 @@ void chip8_emulateCycle(Chip8* chip8) {
       }
       break;
 
+    case 0x1000: // 1NNN - Jump to address NNN
+      chip8->pc = opcode & 0x0FFF;
+      d_printf("%X: Jump to address 0x%03X\n", opcode, opcode & 0x0FFF);
+      break;
+
+    case 0x2000: // 2NNN - Calls subroutine at NNN
+      chip8->stack[chip8->sp] = chip8->pc; // Push current PC onto stack
+      chip8->sp++; // Increment stack pointer
+      chip8->pc = opcode & 0x0FFF; // Set PC to NNN
+      d_printf("%X: Call subroutine at 0x%03X\n", opcode, opcode & 0x0FFF);
+      break;
+
+    case 0x3000: // 3XNN - Skips the next instruction if VX equals NN (usually the next instruction is a jump to skip a code block).
+      if (chip8->V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) {
+        chip8->pc += 4; // Skip the next instruction
+        d_printf("%X: Skip next instruction, V%X == %02X\n", opcode, (opcode & 0x0F00) >> 8, opcode & 0x00FF);
+      } else {
+        chip8->pc += 2; // Move to the next instruction
+        d_printf("%X: Do not skip next instruction, V%X != %02X\n", opcode, (opcode & 0x0F00) >> 8, opcode & 0x00FF);
+      }
+      break;
+
+    case 0x4000: // 4XNN - Skips the next instruction if VX does not equal NN (usually the next instruction is a jump to skip a code block).
+      if (chip8->V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
+        chip8->pc += 4; // Skip the next instruction
+        d_printf("%X: Skip next instruction, V%X != %02X\n", opcode, (opcode & 0x0F00) >> 8, opcode & 0x00FF);
+      } else {
+        chip8->pc += 2; // Move to the next instruction
+        d_printf("%X: Do not skip next instruction, V%X == %02X\n", opcode, (opcode & 0x0F00) >> 8, opcode & 0x00FF);
+      }
+      break;
 
     default:
       d_printf("Unknown opcode: 0x%04X\n", opcode);
