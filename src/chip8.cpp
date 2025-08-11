@@ -266,6 +266,11 @@ void Chip8::emulateCycle() {
       d_printf("%X: Set I to 0x%03X\n", opcode, opcode & 0x0FFF);
       break;
 
+    case 0xB000: // BNNN - Jumps to the address NNN plus V0
+      pc = (opcode & 0x0FFF) + V[0];
+      d_printf("%X: Jump to address 0x%03X + V0 (%d)\n", opcode, opcode & 0x0FFF, V[0]);
+      break;
+
     case 0xC000: { // CXNN - Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
       unsigned char rand_num = rand() % 256; // Generate a random number
       V[(opcode & 0x0F00) >> 8] = rand_num & (opcode & 0x00FF);
